@@ -1,1 +1,2 @@
-# Alpha_Volatility_Strategy
+# **Volatility Trading Project** - (***ongoing project***)
+
