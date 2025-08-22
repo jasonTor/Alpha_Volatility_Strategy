@@ -17,4 +17,16 @@ The option dataset was split chronologically into three disjoint subsets:
 
 This setup ensures a clear separation between model development, simulation, and unbiased performance assessment.
 
+### **3. Repository structure**
+
+This repository contains the following files:
+1. **Files related to simulation prototypes, preprocessing and experiments** :
+   - ***gamma_scalp_simulation.ipynb***: Notebook illustrating the theory of gamma scalping (RV vs IV) through simulations. For a long/short position on a straddle priced with a given IV under Black-Scholes assumptions, this notebook shows how the PnL evolves based on simulated spot trajectories (geometric Brownian motion) and realized volatility. The simulation results perfectly match the theory, as seen in the last three PnL histograms from Monte-Carlo simulations.
+   - ***data_preprocessing.ipynb***: Notebook for studying and cleaning the data to make it reproducible. The code may look a bit messy as it is just to clean data.
+   - ***exploratory_analysis.ipynb***: This notebook aims to perform exploratory analyses. It serves as a space for prototyping and experimentation. The code here is not meant for production use but is intended to inspire and guide me in designing strategies.
+2. **Simulation architecture coded from scratch**:
+   - ***Data/market_data.py***
+   - ***strategy/*** : Folder containing all files related to strategy implementation.
+   - ***backtester.py*** : Prototype for backtesting the implemented strategies.
+   - ***main.py*** : Main file where backtests are run.
  
