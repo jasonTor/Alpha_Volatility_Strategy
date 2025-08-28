@@ -3,6 +3,8 @@ import numpy as np
 
 from strategy.base_strat import BaseStrategy
 
+from hmmlearn import hmm
+
 class Regime_switching_modelfree(BaseStrategy):
 
     def __init__(self, market_data):
@@ -66,3 +68,90 @@ class Regime_switching_modelfree(BaseStrategy):
             return 'LONG'
         elif condition2: 
             return 'SHORT' 
+
+
+
+class Regime_switching_HMM(BaseStrategy):
+
+    def __init__(self, market_data):
+        super().__init__(market_data)
+    
+    def df_filtered_price(self, straddle_row):
+        '''Return the dataframe of all prices until the date of straddle_row, with
+        log_return include
+        '''
+        df_filtered = self.market_data.df_price.copy()
+        df_filtered['log_returns'] = np.log(df_filtered['Price'] / df_filtered['Price'].shift(1))
+        rv_5d = []
+        for i in range(len(df_filtered)):
+            if i < 5:
+                rv_5d.append(np.nan)
+            else:
+                vol = np.sqrt(np.mean(df_filtered['log_returns'].iloc[i-4:i+1]**2) * 252)
+                rv_5d.append(vol)
+        df_filtered['rv_5d'] = rv_5d
+
+        df_filtered = df_filtered[(df_filtered['Date'] > " 2016-03-01") & (df_filtered['Date'] <= straddle_row['Date'])]
+
+        return df_filtered
+
+
+    def generate_alpha(self, straddle_row):
+        if straddle_row['Date'] in self.market_data.df_train['Date'].tolist(): # if it's a straddle in df_train
+            df_filtered = self.df_filtered_price(self.market_data.df_train.iloc[-1])   
+        else : # if it's a straddle in df_validation
+            df_filtered = self.df_filtered_price(straddle_row)  
+
+        log_returns = df_filtered['log_returns']
+        features = pd.concat([log_returns], axis=1).dropna()  
+
+        mean = features.mean()
+        std = features.std()
+        features_scaled = (features - mean) / std
+
+        model = hmm.GaussianHMM(n_components=3, covariance_type="full", n_iter=1000, random_state=42) 
+        model.fit(features_scaled)
+
+        hidden_states = model.predict(features_scaled) # probale states
+        proba_states = model.predict_proba(features_scaled) # probability of being in a given state
+
+        # calculate the variance of log_return for each state
+        state_variances = [np.var(log_returns[hidden_states == i]) for i in range(model.n_components)]
+        sorted_states = np.argsort(state_variances)  
+        low_vol_index = sorted_states[0] # Low regime
+        mid_vol_index = sorted_states[1] # Middle regime
+        high_vol_index = sorted_states[2] # High regime
+
+        df_states = pd.DataFrame({
+            "Date": df_filtered['Date'],
+            "log_return": log_returns.values,
+            "rv_5d": df_filtered['rv_5d'],
+            "state": hidden_states,
+            "proba_lowregime": proba_states[:,low_vol_index],
+            "proba_midregime": proba_states[:,mid_vol_index],
+            "proba_highregime": proba_states[:,high_vol_index]
+        })
+
+        dic_vol_date = dict(zip(df_states['Date'],df_states['rv_5d']))
+        dic_prob_low = dict(zip(df_states['Date'],df_states['proba_lowregime']))
+        dic_prob_high = dict(zip(df_states['Date'],df_states['proba_highregime']))
+
+
+        return dic_vol_date[straddle_row['Date']], dic_prob_low[straddle_row['Date']], dic_prob_high[straddle_row['Date']]
+
+
+
+
+    def should_trade(self, straddle_row):
+        alpha = self.generate_alpha(straddle_row)
+        condition1 = (alpha[0] > straddle_row['IV']) and (alpha[2] > 0.12) # LONG
+        condition2 = (alpha[0] > straddle_row['IV']) and (alpha[1] > 0.68) # SHORT
+        return condition1 or condition2
+
+
+    def get_signal(self, straddle_row):
+        alpha = self.generate_alpha(straddle_row)
+        condition1 = (alpha[0] > straddle_row['IV']) and (alpha[2] > 0.12) # LONG
+        condition2 = (alpha[0] > straddle_row['IV']) and (alpha[1] > 0.68) # SHORT
+        if condition2 : 
+            return 'SHORT'
