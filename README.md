@@ -251,6 +251,17 @@ $$
 
 In this project, we will focus on trading straddles (at-the-money call + put) to maximize Gamma to optimally capture the differences between realized volatility (RV) and implied volatility (IV)
 
+---
+
+### **REMARK** : Volatility risk premium and structural option bias
+It is important to highlight that implied volatility (IV) is, on average, higher than realized volatility (RV). This gap reflects a volatility risk premium, indeed option sellers are compensated for bearing exposure to extreme risks (rare but violent market moves), while option buyers benefit from the convexity of their positions. As a result, most options are structurally “expensive” relative to the volatility that is eventually realized.
+
+This explains why short volatility strategies are statistically favored and way easier to catch, while long volatility strategies face a structural disadvantage. In my df_train dataset, about **63%** of straddles are overpriced versus **37%** underpriced. The objective is therefore twofold:
+
+- Build a long signal that performs better than 63% success rate.
+
+- Build a short signal that performs better than 37% success rate.
+
 
 
 
