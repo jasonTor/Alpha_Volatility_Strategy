@@ -12,9 +12,9 @@ Second, the underlying daily Apple stock prices were collected using the Yahoo F
 
 The option dataset was split chronologically into three disjoint subsets:
 
-- Training set (70%): used to design and train models or statistical strategies.
-- Validation set (15%): used for backtesting and simulating strategies.
-- Test set (15%): kept strictly out-of-sample, treated as an unseen “future” dataset to evaluate final strategies.
+- Training set (70%) (January 2016 - January 2021): used to design and train models or statistical strategies.
+- Validation set (15%) (January 2021 - December 2021): used for backtesting and simulating strategies.
+- Test set (15%) (January 2022 - March 2023) : kept **strictly out-of-sample, treated as an unseen “future” dataset to evaluate final strategies**.
 
 This setup ensures a clear separation between model development, simulation, and unbiased performance assessment.
 
@@ -256,11 +256,28 @@ In this project, we will focus on trading straddles (at-the-money call + put) to
 ### **REMARK** : Volatility risk premium and structural option bias
 It is important to highlight that implied volatility (IV) is, on average, higher than realized volatility (RV). This gap reflects a volatility risk premium, indeed option sellers are compensated for bearing exposure to extreme risks (rare but violent market moves), while option buyers benefit from the convexity of their positions. As a result, most options are structurally “expensive” relative to the volatility that is eventually realized.
 
-This explains why short volatility strategies are statistically favored and way easier to catch, while long volatility strategies face a structural disadvantage. In my df_train dataset, about **63%** of straddles are overpriced versus **37%** underpriced. The objective is therefore twofold:
+Another intuitive explanation for this structural bias lies in the asymmetric risk profile of options : A loss on a short option position has a much larger impact than a loss on a long option position. This is because volatility can theoretically increase without limit (no upper bound), while it is bounded below by zero. For this reason, traders are usually more reluctant to sell options than to buy them. To compensate for this asymmetric risk of sudden volatility spikes, they tend to overprice options.
 
-- Build a long signal that performs better than 63% success rate.
+From this perspective, trading strategies based on signals can be interpreted as follows:
 
-- Build a short signal that performs better than 37% success rate.
+- **Case 1 : Buy signal** (option underpriced):
+   Buying makes sense, but the signal must be very robust and strongly validated in backtests. Losses are limited, but profits require strong conviction.
+
+- **Case 2 : Sell signal** (option overpriced):
+   The signal does not need to be as strong. Even moderate reliability is enough to justify selling, since the market structurally tends to overprice options.
+
+In extreme cases, when the market seems particularly calm, some traders even sell options almost systematically.
+
+My empirical analysis confirms this bias:
+
+On Apple options (df_train) between January 2016 and January 2021 (including the COVID crisis), 62% of options were overpriced (IV > RV) vs 38% underpriced (RV > IV). During the period from January 2021 to December 2021 (df_validation), the proportion of overpriced options rose to 75%, compared to only 25% underpriced.
+
+
+This explains why short volatility strategies are statistically favored and way easier to catch, while long volatility strategies face a structural disadvantage. The objective is therefore twofold:
+
+- Build a long signal that performs better than 62% success rate (df_train) and 75% success rate (df_validation).
+
+- Build a short signal that performs better than 38% success rate (df_train) and 25% success rate (df_validation).
 
 
 
