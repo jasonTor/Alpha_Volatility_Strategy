@@ -9,9 +9,9 @@ class Regime_switching_modelfree(BaseStrategy):
 
     def __init__(self, market_data):
         super().__init__(market_data)
-        self.dic_vol_10_train, self.dic_vol_1_train, self.dic_vol_10_validation, self.dic_vol_1_validation = self.set_vol_lookahead()
+        self.dic_vol_10_train, self.dic_vol_1_train, self.dic_vol_10_validation, self.dic_vol_1_validation = self.set_vol_historical()
 
-    def set_vol_lookahead(self):
+    def set_vol_historical(self):
         def compute_vols(df_subset):
             rv_10, rv_1 = [], []
             for _, row in df_subset.iterrows():
@@ -25,8 +25,8 @@ class Regime_switching_modelfree(BaseStrategy):
                 rv_10.append(vol10)
                 rv_1.append(vol)
 
-            df_subset['rv_lookahead_10d'] = rv_10
-            df_subset['rv_lookahead_1d'] = rv_1
+            df_subset['rv_historical_10d'] = rv_10
+            df_subset['rv_historical_1d'] = rv_1
             return df_subset
 
         df_train_sub = self.market_data.df_train[['Date','Price']].drop_duplicates()
@@ -37,11 +37,11 @@ class Regime_switching_modelfree(BaseStrategy):
         # df_subset_train = compute_vols(df_train_sub)
         # df_subset_validation = compute_vols(df_validation_sub)
 
-        dic_vol_10_train = dict(zip(df_train_sub['Date'], compute_vols(df_train_sub)['rv_lookahead_10d']))
-        dic_vol_1_train = dict(zip(df_train_sub['Date'], compute_vols(df_train_sub)['rv_lookahead_1d']))
+        dic_vol_10_train = dict(zip(df_train_sub['Date'], compute_vols(df_train_sub)['rv_historical_10d']))
+        dic_vol_1_train = dict(zip(df_train_sub['Date'], compute_vols(df_train_sub)['rv_historical_1d']))
 
-        dic_vol_10_validation = dict(zip(df_validation_sub['Date'],compute_vols(df_validation_sub)['rv_lookahead_10d']))
-        dic_vol_1_validation = dict(zip(df_validation_sub['Date'],compute_vols(df_validation_sub)['rv_lookahead_1d']))        
+        dic_vol_10_validation = dict(zip(df_validation_sub['Date'],compute_vols(df_validation_sub)['rv_historical_10d']))
+        dic_vol_1_validation = dict(zip(df_validation_sub['Date'],compute_vols(df_validation_sub)['rv_historical_1d']))        
 
         return dic_vol_10_train, dic_vol_1_train, dic_vol_10_validation, dic_vol_1_validation
 
@@ -137,21 +137,24 @@ class Regime_switching_HMM(BaseStrategy):
         dic_prob_high = dict(zip(df_states['Date'],df_states['proba_highregime']))
 
 
-        return dic_vol_date[straddle_row['Date']], dic_prob_low[straddle_row['Date']], dic_prob_high[straddle_row['Date']]
+        return dic_vol_date[straddle_row['Date']], dic_prob_low[straddle_row['Date']], dic_prob_high[straddle_row['Date']] # historical vol 5d, proba low_reg, proba high regime
 
 
 
 
     def should_trade(self, straddle_row):
         alpha = self.generate_alpha(straddle_row)
-        condition1 = (alpha[0] > straddle_row['IV']) and (alpha[2] > 0.12) # LONG
-        condition2 = (alpha[0] > straddle_row['IV']) and (alpha[1] > 0.68) # SHORT
+        condition1 = (alpha[0] < straddle_row['IV']) and (alpha[1] > 0.86) # SHORT
+        condition2 = (alpha[0] > straddle_row['IV']) and (alpha[2] > 0.7) # LONG
         return condition1 or condition2
+
 
 
     def get_signal(self, straddle_row):
         alpha = self.generate_alpha(straddle_row)
-        condition1 = (alpha[0] > straddle_row['IV']) and (alpha[2] > 0.12) # LONG
-        condition2 = (alpha[0] > straddle_row['IV']) and (alpha[1] > 0.68) # SHORT
-        if condition2 : 
+        condition1 = (alpha[0] < straddle_row['IV']) and (alpha[1] > 0.86) # SHORT
+        condition2 = (alpha[0] > straddle_row['IV']) and (alpha[2] > 0.7) # LONG
+        if condition1 : 
             return 'SHORT'
+        elif condition2:
+            return 'LONG'

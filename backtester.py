@@ -118,12 +118,11 @@ class Backtester:
 
 
 
-    
     # ------------------------------------------- IV vs RV Backtesting ---------------------------------------------------------------
     def run_backtest_IVvsRV(self):
         '''This function backtests the predictive power of the strategy by computing the proportion
-         of correct predictions between implied volatility (IV) and realized volatility (RV) on 
-         df_train and df_validation
+        of correct predictions between implied volatility (IV) and realized volatility (RV) on 
+        df_train and df_validation
         '''
         df_filtered = self.market_data.df_train[self.market_data.df_train['Date'] > " 2016-03-01"]
 
@@ -148,15 +147,41 @@ class Backtester:
             1, 0
         )
 
-        success_rate_train = df_trades["success"].mean() if not df_trades.empty else 0.0
-        success_rate_validation = df_trades2["success"].mean() if not df_trades2.empty else 0.0
+        long_trades_train = df_trades[df_trades["signal"] == "LONG"]
+        short_trades_train = df_trades[df_trades["signal"] == "SHORT"]
+        
+        success_rate_long_train = long_trades_train["success"].mean() if not long_trades_train.empty else 0.0
+        success_rate_short_train = short_trades_train["success"].mean() if not short_trades_train.empty else 0.0
+        success_rate_total_train = df_trades["success"].mean() if not df_trades.empty else 0.0
+        
+        long_trades_validation = df_trades2[df_trades2["signal"] == "LONG"]
+        short_trades_validation = df_trades2[df_trades2["signal"] == "SHORT"]
+        
+        success_rate_long_validation = long_trades_validation["success"].mean() if not long_trades_validation.empty else 0.0
+        success_rate_short_validation = short_trades_validation["success"].mean() if not short_trades_validation.empty else 0.0
+        success_rate_total_validation = df_trades2["success"].mean() if not df_trades2.empty else 0.0
 
-
-        print(f"The strategy achieved a success rate of {success_rate_train:.2%} on {len(df_trades)} straddle trades in df_train.")
-        print(f"The strategy achieved a success rate of {success_rate_validation:.2%} on {len(df_trades2)} straddle trades in df_validation.")
+        # Detail
+        print("=" * 80)
+        print("IV vs RV BACKTEST RESULTS - TRAIN SET")
+        print("=" * 80)
+        print(f"Total trades: {len(df_trades)}")
+        print(f"LONG trades: {len(long_trades_train)} - (RV > IV) Success rate: {success_rate_long_train:.2%} versus 38% in df_train")
+        print(f"SHORT trades: {len(short_trades_train)} - (RV < IV) Success rate: {success_rate_short_train:.2%} versus 62% in df_train")
+        print(f"OVERALL success rate: {success_rate_total_train:.2%}")
+        print()
+        
+        print("=" * 80)
+        print("IV vs RV BACKTEST RESULTS - VALIDATION SET")
+        print("=" * 80)
+        print(f"Total trades: {len(df_trades2)}")
+        print(f"LONG trades: {len(long_trades_validation)} - (RV > IV) Success rate: {success_rate_long_validation:.2%} versus 25% in df_validation")
+        print(f"SHORT trades: {len(short_trades_validation)} - (RV < IV) Success rate: {success_rate_short_validation:.2%} versus 75% in df_validation")
+        print(f"OVERALL success rate: {success_rate_total_validation:.2%}")
+        print("=" * 80)
 
         return None
-    # --------------------------------------------------------------------------------------------------------------------------------       
+    # --------------------------------------------------------------------------------------------------------------------------------      
         
 
 
@@ -171,7 +196,7 @@ class Backtester:
             if signal == 'LONG' :
                 res['PNL'] = scalp['PNL']
                 res['trade_signal'] = 'LONG'
-            else : # If signal == 'SHORT'
+            elif signal == 'SHORT' : # If signal == 'SHORT'
                 res['PNL'] = -scalp['PNL']
                 res['trade_signal'] = 'SHORT'
             res['price_strad'] = scalp['price_strad']
@@ -192,7 +217,7 @@ class Backtester:
             #print(f"Date:{row['Date']}, PNL:{PNL}, Decision to trade:{res['trade_signal']}, iv:{row['IV']}, rv:{row['vol_real']}")
         ROI = PNL / Investment_capital if Investment_capital != 0 else 0
         
-        print(f"PNL:{PNL}, ROI:{ROI*100} %")
+        print(f"Result on df_train : PNL:{PNL}, ROI:{ROI*100} %")
         return None
     
     def run_backtest_validation(self):
@@ -205,7 +230,7 @@ class Backtester:
             #print(f"Date:{row['Date']}, PNL:{PNL}, Decision to trade:{res['trade_signal']}, iv:{row['IV']}, rv:{row['vol_real']}")
         ROI = PNL / Investment_capital if Investment_capital != 0 else 0
         
-        print(f"PNL:{PNL}, ROI:{ROI*100} %")
+        print(f"Result on df_validation : PNL:{PNL}, ROI:{ROI*100} %")
         return None
     # -----------------------------------------------------------------------------------------------------------------------------
     
