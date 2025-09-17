@@ -275,9 +275,9 @@ On Apple options (df_train) between January 2016 and January 2021 (including the
 
 This explains why short volatility strategies are statistically favored and way easier to catch, while long volatility strategies face a structural disadvantage. The objective is therefore twofold:
 
-- Build a long signal that performs better than 62% success rate (df_train) and 75% success rate (df_validation).
+- Build a short signal that performs better than 62% success rate (df_train) and 75% success rate (df_validation).
 
-- Build a short signal that performs better than 38% success rate (df_train) and 25% success rate (df_validation).
+- Build a long signal that performs better than 38% success rate (df_train) and 25% success rate (df_validation).
 
 
 
